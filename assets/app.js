@@ -412,6 +412,22 @@ if (form) {
     if (!validPhone(phone)) { setErr('phone', T('errPhone')); ok = false; }
     if (!ok) return $('.is-invalid', form).focus();
     const svc = fService.value === 'consult' ? $('#f-service option[value="consult"]').textContent : NV.names[fService.value];
+    // Also file the request in the clinic software. Fire-and-forget: if it
+    // fails, the patient still gets their WhatsApp/SMS message. `keepalive`
+    // matters because the page navigates away on the very next line.
+    try {
+      fetch(NV.bookingApi, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name, phone, service: svc,
+          day: chosenDay || '', slot: chosenSlot || '',
+          note: fNote.value.trim(),
+          website: ($('#f-website') || {}).value || '',
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch (_) { /* never block the booking */ }
     const text = [
       T('msgIntro'),
       `👤 ${T('msgName')}: ${name}`,
