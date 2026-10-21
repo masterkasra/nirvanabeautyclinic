@@ -14,6 +14,20 @@ const dg = s => (DIGITS[L] ? String(s).replace(/\d/g, d => DIGITS[L][d]) : Strin
 const enDigits = s => String(s).replace(/[۰-۹٠-٩]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d) >= 0 ? '۰۱۲۳۴۵۶۷۸۹'.indexOf(d) : '٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
 const icon = id => `<svg aria-hidden="true"><use href="#${id}"/></svg>`;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* conversion events: no-op until GA4/Clarity are configured in src/config.mjs */
+const track = (name, params = {}) => {
+  if (typeof window.gtag === 'function') window.gtag('event', name, params);
+  if (typeof window.clarity === 'function') window.clarity('event', name);
+};
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href]'); if (!a) return;
+  const href = a.getAttribute('href') || '';
+  if (href.startsWith('tel:')) track('call_click');
+  else if (href.includes('wa.me')) track('whatsapp_click');
+  else if (href.includes('t.me')) track('telegram_click');
+  else if (href.includes('instagram.com')) track('instagram_click');
+  else if (href.includes('google.com/maps')) track('map_click');
+});
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
@@ -443,6 +457,7 @@ if (form) {
       : `https://wa.me/${NV.whatsapp}?text=${encodeURIComponent(text)}`;
     window.open(url, via === 'sms' ? '_self' : '_blank', 'noopener');
     toast(T('sent'));
+    track('booking_submit', { method: via, service: svc });
   });
 }
 })();
